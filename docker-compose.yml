@@ -1,0 +1,16 @@
+services:
+  mongo:
+    image: mongo:6
+    container_name: proshop_mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secret
+      MONGO_INITDB_DATABASE: proshop
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
