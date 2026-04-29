@@ -1,127 +1,196 @@
-# ProShop eCommerce Platform
+# ProShop
 
-> eCommerce platform built with the MERN stack & Redux.
+Интернет-магазин электроники на MERN-стеке. Покупатели могут просматривать товары, оставлять отзывы, добавлять в корзину и оплачивать через PayPal. Администраторы управляют товарами, пользователями и заказами через раздел `/admin`.
 
-### THIS PROJECT IS DEPRECATED
-This project is no longer supported. The new project/course has been released. The code has been cleaned up and now uses Redux Toolkit. You can find the new version [HERE](https://github.com/bradtraversy/proshop-v2)
+Проект основан на курсе [Brad Traversy](https://github.com/bradtraversy/proshop_mern). Upstream репозиторий объявил его устаревшим в пользу [proshop-v2](https://github.com/bradtraversy/proshop-v2) (Redux Toolkit). Этот форк поддерживается отдельно.
 
-![screenshot](https://github.com/bradtraversy/proshop_mern/blob/master/uploads/Screen%20Shot%202020-09-29%20at%205.50.52%20PM.png)
+---
 
-## Features
+## Tech Stack
 
-- Full featured shopping cart
-- Product reviews and ratings
-- Top products carousel
-- Product pagination
-- Product search feature
-- User profile with orders
-- Admin product management
-- Admin user management
-- Admin Order details page
-- Mark orders as delivered option
-- Checkout process (shipping, payment method, etc)
-- PayPal / credit card integration
-- Database seeder (products & users)
+| Часть        | Технология                     | Версия    |
+|--------------|-------------------------------|-----------|
+| Runtime      | Node.js                        | ≥ 14.6    |
+| Backend      | Express                        | ^4.17.1   |
+| ODM          | Mongoose                       | ^5.10.6   |
+| Database     | MongoDB                        | 6 (Docker)|
+| Auth         | jsonwebtoken + bcryptjs        | ^8.5.1 / ^2.4.3 |
+| File upload  | multer                         | ^1.4.2    |
+| Frontend     | React                          | ^16.13.1  |
+| State        | Redux + redux-thunk            | ^4.0.5 / ^2.3.0 |
+| UI           | React Bootstrap                | ^1.3.0    |
+| HTTP client  | axios                          | ^0.20.0   |
+| Payments     | react-paypal-button-v2         | ^2.6.2    |
+| Bundler      | react-scripts (CRA)            | 3.4.3     |
 
-## Note on Issues
-Please do not post issues here that are related to your own code when taking the course. Add those in the Udemy Q/A. If you clone THIS repo and there are issues, then you can submit
+---
 
-## Usage
-
-### ES Modules in Node
-
-We use ECMAScript Modules in the backend in this project. Be sure to have at least Node v14.6+ or you will need to add the "--experimental-modules" flag.
-
-Also, when importing a file (not a package), be sure to add .js at the end or you will get a "module not found" error
-
-You can also install and setup Babel if you would like
-
-### Env Variables
-
-Create a .env file in then root and add the following
+## Структура папок
 
 ```
-NODE_ENV = development
-PORT = 5000
-MONGO_URI = your mongodb uri
-JWT_SECRET = 'abc123'
-PAYPAL_CLIENT_ID = your paypal client id
+proshop_mern/
+├── backend/
+│   ├── config/        # подключение к MongoDB (db.js)
+│   ├── controllers/   # логика роутов (product, user, order)
+│   ├── data/          # seed-данные (users.js, products.js)
+│   ├── middleware/    # authMiddleware (protect, admin), errorMiddleware
+│   ├── models/        # Mongoose-схемы: User, Product, Order
+│   ├── routes/        # Express-роуты
+│   ├── utils/         # generateToken.js (JWT)
+│   └── server.js      # точка входа
+├── frontend/
+│   └── src/
+│       ├── actions/   # Redux action creators
+│       ├── components/# переиспользуемые компоненты
+│       ├── constants/ # типы Redux-экшнов
+│       ├── reducers/  # Redux-редьюсеры
+│       ├── screens/   # страницы (Home, Product, Cart, Checkout, Admin...)
+│       └── store.js   # конфигурация Redux store
+├── uploads/           # загруженные изображения товаров (локально)
+├── docker-compose.yml # MongoDB с авторизацией
+└── .env               # переменные окружения (не в git)
 ```
 
-### Install Dependencies (frontend & backend)
+---
 
+## Установка и запуск
+
+### 1. Prerequisites
+
+- **Node.js** v14.6 или выше (проверено на v20.5.1)
+- **Docker** и **Docker Compose** — для MongoDB  
+  Альтернатива: любой MongoDB 6, доступный локально
+
+### 2. Клонирование
+
+```bash
+git clone <repo-url>
+cd proshop_mern
 ```
+
+### 3. Переменные окружения
+
+Создай файл `.env` в корне проекта:
+
+```env
+NODE_ENV=development
+PORT=5001
+MONGO_URI=mongodb://admin:secret@localhost:27017/proshop?authSource=admin
+JWT_SECRET=any_random_string_here
+PAYPAL_CLIENT_ID=your_paypal_sandbox_client_id
+```
+
+> **PORT**: порт 5000 на macOS Monterey+ занят системным процессом AirPlay Receiver.  
+> Используй 5001 (или любой другой свободный) и обнови proxy в `frontend/package.json` на тот же порт.
+
+Все переменные реально читаются в коде:
+- `PORT` — `backend/server.js`
+- `MONGO_URI` — `backend/config/db.js`
+- `JWT_SECRET` — `backend/utils/generateToken.js`, `backend/middleware/authMiddleware.js`
+- `PAYPAL_CLIENT_ID` — `backend/server.js` (отдаётся через `/api/config/paypal`)
+
+### 4. Запуск MongoDB
+
+```bash
+docker compose up -d
+```
+
+Это поднимает MongoDB 6 с авторизацией (логин `admin`, пароль `secret`, база `proshop`). Данные хранятся в Docker volume `mongo_data` — переживают перезапуск контейнера.
+
+### 5. Установка зависимостей
+
+```bash
+# Зависимости бэкенда (из корня)
 npm install
-cd frontend
-npm install
+
+# Зависимости фронтенда
+cd frontend && npm install && cd ..
 ```
 
-### Run
+### 6. Наполнение базы тестовыми данными
 
-```
-# Run frontend (:3000) & backend (:5000)
-npm run dev
+После первого запуска MongoDB база пустая — без этого шага главная страница будет пустой.
 
-# Run backend only
-npm run server
-```
-
-## Build & Deploy
-
-```
-# Create frontend prod build
-cd frontend
-npm run build
-```
-
-There is a Heroku postbuild script, so if you push to Heroku, no need to build manually for deployment to Heroku
-
-### Seed Database
-
-You can use the following commands to seed the database with some sample users and products as well as destroy all data
-
-```
-# Import data
+```bash
 npm run data:import
-
-# Destroy data
-npm run data:destroy
 ```
 
+Тестовые аккаунты после сидинга:
+
+| Email                  | Пароль | Роль  |
+|------------------------|--------|-------|
+| admin@example.com      | 123456 | Admin |
+| john@example.com       | 123456 | User  |
+| jane@example.com       | 123456 | User  |
+
+### 7. Запуск
+
+```bash
+npm run dev
 ```
-Sample User Logins
 
-admin@example.com (Admin)
-123456
+Запускает бэкенд (nodemon, порт из `.env`) и фронтенд (CRA, порт 3000) одновременно через `concurrently`.
 
-john@example.com (Customer)
-123456
+- Фронтенд: http://localhost:3000  
+- API: http://localhost:5001/api
 
-jane@example.com (Customer)
-123456
+---
+
+## Полезные команды
+
+```bash
+# Только бэкенд
+npm run server
+
+# Только фронтенд
+npm run client
+
+# Очистить базу и залить заново
+npm run data:destroy && npm run data:import
+
+# Продакшн-сборка фронтенда
+cd frontend && npm run build
 ```
 
+---
+
+## Troubleshooting
+
+### Главная страница пустая (нет товаров)
+База данных не заполнена. Запусти:
+```bash
+npm run data:import
+```
+
+### `Error: listen EADDRINUSE :::5000` (или другой порт)
+Порт занят предыдущим процессом или системным сервисом. На macOS порт 5000 — AirPlay Receiver. Смени `PORT` в `.env` на свободный (например, 5001) и обнови `"proxy"` в `frontend/package.json` на тот же адрес.
+
+Убить зависший процесс:
+```bash
+lsof -ti :5001 | xargs kill -9
+```
+
+### `Error: ERR_OSSL_EVP_UNSUPPORTED` при запуске фронтенда
+`react-scripts` 3.x несовместим с OpenSSL в Node.js v17+. Флаг `NODE_OPTIONS=--openssl-legacy-provider` уже прописан в скрипте `client` в корневом `package.json` — дополнительных действий не нужно.
+
+### `MongoServerError: Authentication failed`
+Убедись, что в `MONGO_URI` есть параметр `authSource=admin`:
+```
+mongodb://admin:secret@localhost:27017/proshop?authSource=admin
+```
+Без него Mongo ищет пользователя в базе `proshop`, а не в `admin`.
+
+### PayPal-кнопка не появляется на странице заказа
+`PAYPAL_CLIENT_ID` не задан или неверный. Нужен **sandbox** Client ID из [PayPal Developer Dashboard](https://developer.paypal.com/). После изменения `.env` перезапусти бэкенд — значение читается при старте сервера.
+
+### Изменения в Mongoose-модели не применяются / странные ошибки
+Пересоздай данные:
+```bash
+npm run data:destroy && npm run data:import
+```
+
+---
 
 ## License
 
-The MIT License
-
-Copyright (c) 2020 Traversy Media https://traversymedia.com
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+MIT © 2020 [Traversy Media](https://traversymedia.com)

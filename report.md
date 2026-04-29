@@ -13,6 +13,8 @@ WebStorm (JetBrains) was used alongside Claude Code as a familiar environment fo
 **External tool: ChatGPT (OpenAI)**
 ChatGPT was used to assist with correctly setting up a PayPal developer/sandbox account required for the payment integration in this project.
 
+**Local run confirmed:** проект запущен локально через `docker compose up -d` (MongoDB) + `npm run dev` (backend :5001, frontend :3000).
+
 ---
 
 ## Rules Diff
