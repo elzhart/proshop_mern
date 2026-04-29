@@ -1,0 +1,14 @@
+# FINDINGS — proshop_mern
+
+| # | Риск | Где | Что | Как фиксить | Статус |
+|---|------|-----|-----|-------------|--------|
+| 1 | 🔴 | `backend/controllers/orderController.js::updateOrderToPaid` | `req.body.payer.email_address` падает с TypeError если PayPal присылает payload без поля `payer` — 500 в момент оплаты, заказ зависает в "not paid" | добавить `req.body.payer?.email_address` и проверку наличия `req.body.payer` перед чтением | 🔴 not yet |
+| 2 | 🔴 | `frontend/src/screens/PlaceOrderScreen.js::placeOrderHandler` | `disabled={cart.cartItems === 0}` — сравнение массива с числом, всегда `false`, кнопка никогда не отключается; плюс прямая мутация Redux-стора (`cart.itemsPrice = ...`) вне редьюсера | заменить на `cart.cartItems.length === 0`; вынести расчёт цен в `cartReducer` или selector | 🔴 not yet |
+| 3 | 🟡 | `backend/routes/uploadRoutes.js` (router.post '/') | `req.file.path` падает с 500 если multer отклонил файл — `req.file` будет `undefined`; `cb('Images only!')` передаёт строку вместо `Error`, Express не обрабатывает как ошибку | проверить `if (!req.file)` перед `res.send`; заменить `cb('Images only!')` на `cb(new Error('Images only!'))` | 🔴 not yet |
+| 4 | 🟡 | `frontend/src/screens/OrderScreen.js::useEffect + addPayPalScript` | динамическая инъекция `<script>` в DOM без cleanup — если компонент размонтируется до загрузки SDK, `setSdkReady(true)` вызывается на мёртвом компоненте; `console.log(paymentResult)` в продакшне | вынести в хук `usePayPalScript`, добавить `let mounted = true` cleanup в useEffect, убрать console.log | 🔴 not yet |
+| 5 | 🟡 | `backend/controllers/userController.js::deleteUser`, `backend/controllers/productController.js::deleteProduct` | `.remove()` удалён в Mongoose 7 (deprecated с 6) — сломается при апгрейде; нет проверки на удаление самого себя admin-ом | заменить на `Model.deleteOne({ _id: ... })`; добавить guard `req.user._id === req.params.id` | 🔴 not yet |
+| 6 | 🟢 | `backend/controllers/productController.js::createProduct` | плейсхолдеры `'Sample name'`, `'/images/sample.jpg'` и т.д. хардкодом попадают в БД при создании товара | вынести дефолты в константу или конфиг | 🔴 not yet |
+| 7 | 🟢 | `frontend/src/screens/PlaceOrderScreen.js` | налог `0.15` (15%) и порог бесплатной доставки `100` хардкодом в компоненте | вынести в `constants/` или конфиг | 🔴 not yet |
+| 8 | 🟢 | `package.json` | `mongoose` 5.x (актуальна 8.x), `react-scripts` 3.4.3 (актуальна 5.x, решает OpenSSL-проблему), `react-router-dom` 5.x (актуальна 6.x), `dotenv` 8.x (актуальна 16.x) | поэтапный апгрейд с проверкой breaking changes для каждого пакета | 🔴 not yet |
+| 9 | 🟢 | `backend/controllers/orderController.js::addOrderItems` | `return` после `throw new Error(...)` недостижим (dead code) | удалить лишний `return` | 🔴 not yet |
+| 10 | 🟢 | `frontend/src/screens/OrderScreen.js::successPaymentHandler` | `console.log(paymentResult)` — отладочный вывод в продакшне | удалить | 🔴 not yet |
