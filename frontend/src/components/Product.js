@@ -2,12 +2,18 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { Card } from 'react-bootstrap'
 import Rating from './Rating'
+import useFeature from '../hooks/useFeature'
 
 const Product = ({ product }) => {
+  const { active: lazyOn } = useFeature('image_lazy_loading')
   return (
     <Card className='my-3 p-3 rounded'>
       <Link to={`/product/${product._id}`}>
-        <Card.Img src={product.image} variant='top' />
+        <Card.Img
+          src={product.image}
+          variant='top'
+          loading={lazyOn ? 'lazy' : 'eager'}
+        />
       </Link>
 
       <Card.Body>

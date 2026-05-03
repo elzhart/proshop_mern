@@ -5,9 +5,11 @@ import { useDispatch, useSelector } from 'react-redux'
 import Loader from './Loader'
 import Message from './Message'
 import { listTopProducts } from '../actions/productActions'
+import useFeature from '../hooks/useFeature'
 
 const ProductCarousel = () => {
   const dispatch = useDispatch()
+  const { active: lazyOn } = useFeature('image_lazy_loading')
 
   const productTopRated = useSelector((state) => state.productTopRated)
   const { loading, error, products } = productTopRated
@@ -25,7 +27,12 @@ const ProductCarousel = () => {
       {products.map((product) => (
         <Carousel.Item key={product._id}>
           <Link to={`/product/${product._id}`}>
-            <Image src={product.image} alt={product.name} fluid />
+            <Image
+              src={product.image}
+              alt={product.name}
+              fluid
+              loading={lazyOn ? 'lazy' : 'eager'}
+            />
             <Carousel.Caption className='carousel-caption'>
               <h2>
                 {product.name} (${product.price})

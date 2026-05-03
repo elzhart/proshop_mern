@@ -15,11 +15,13 @@ import {
   ORDER_PAY_RESET,
   ORDER_DELIVER_RESET,
 } from '../constants/orderConstants'
+import useFeature from '../hooks/useFeature'
 
 const OrderScreen = ({ match, history }) => {
   const orderId = match.params.id
 
   const [sdkReady, setSdkReady] = useState(false)
+  const { active: paypalOn } = useFeature('paypal_express_buttons')
 
   const dispatch = useDispatch()
 
@@ -198,7 +200,11 @@ const OrderScreen = ({ match, history }) => {
               {!order.isPaid && (
                 <ListGroup.Item>
                   {loadingPay && <Loader />}
-                  {!sdkReady ? (
+                  {!paypalOn ? (
+                    <Message variant='warning'>
+                      PayPal payments are temporarily unavailable. Please try again later.
+                    </Message>
+                  ) : !sdkReady ? (
                     <Loader />
                   ) : (
                     <PayPalButton

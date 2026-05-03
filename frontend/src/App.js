@@ -18,9 +18,12 @@ import UserEditScreen from './screens/UserEditScreen'
 import ProductListScreen from './screens/ProductListScreen'
 import ProductEditScreen from './screens/ProductEditScreen'
 import OrderListScreen from './screens/OrderListScreen'
+import DashboardFeaturesScreen from './screens/DashboardFeaturesScreen'
+import { FeaturesProvider } from './context/FeaturesContext'
 
 const App = () => {
   return (
+    <FeaturesProvider>
     <Router>
       <Header />
       <main className='py-3'>
@@ -48,6 +51,7 @@ const App = () => {
           />
           <Route path='/admin/product/:id/edit' component={ProductEditScreen} />
           <Route path='/admin/orderlist' component={OrderListScreen} />
+          <Route path='/dashboard-features' component={DashboardFeaturesScreen} />
           <Route path='/search/:keyword' component={HomeScreen} exact />
           <Route path='/page/:pageNumber' component={HomeScreen} exact />
           <Route
@@ -60,6 +64,7 @@ const App = () => {
       </main>
       <Footer />
     </Router>
+    </FeaturesProvider>
   )
 }
 

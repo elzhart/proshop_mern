@@ -30,3 +30,92 @@ What was added to `CLAUDE.md` beyond the auto-generated content, and why:
 - **Self-Check Checklist** — a pre-answer checklist (checkout flow, auth/JWT, DB reseed, frontend compile, API contracts). Reduces the chance of Claude producing a correct-looking answer that silently breaks an adjacent flow.
 
 - **Known Gotchas (expanded)** — added explicit project-specific traps: reseed DB after schema changes, clearing localStorage after auth state changes, PayPal sandbox-only rule, file uploads not being persistent in production. These are non-obvious from reading the code and are the most common sources of silent bugs in this stack.
+
+---
+
+## M3
+
+### Feature flags MCP
+
+Задача: проверить состояние фичи `search_v2`; если она в `Disabled` — перевести в `Testing`; установить трафик 25%; подтвердить финальное состояние.
+
+Использованный MCP-сервер: `proshop-features`.
+
+#### Шаг 1 — чтение текущего состояния
+
+Tool call: `mcp__proshop-features__get_feature_info`
+Аргументы:
+```json
+{ "feature_id": "search_v2" }
+```
+Ответ MCP:
+```json
+{
+  "feature_id": "search_v2",
+  "name": "New Search Algorithm",
+  "status": "Testing",
+  "traffic_percentage": 15,
+  "last_modified": "2026-03-10",
+  "targeted_segments": ["beta_users", "internal"],
+  "rollout_strategy": "canary",
+  "dependency_states": []
+}
+```
+
+Вывод: фича уже в статусе `Testing`, не `Disabled` — шаг `set_feature_state(Testing)` пропускается по условию задачи. Нужен только апдейт трафика 15% → 25%.
+
+#### Шаг 2 — изменение трафика
+
+Tool call: `mcp__proshop-features__adjust_traffic_rollout`
+Аргументы:
+```json
+{ "feature_id": "search_v2", "percentage": 25 }
+```
+Ответ MCP:
+```json
+{
+  "feature_id": "search_v2",
+  "name": "New Search Algorithm",
+  "status": "Testing",
+  "traffic_percentage": 25,
+  "last_modified": "2026-05-03",
+  "targeted_segments": ["beta_users", "internal"],
+  "rollout_strategy": "canary"
+}
+```
+
+#### Шаг 3 — подтверждение финального состояния
+
+Tool call: `mcp__proshop-features__get_feature_info`
+Аргументы:
+```json
+{ "feature_id": "search_v2" }
+```
+Ответ MCP:
+```json
+{
+  "feature_id": "search_v2",
+  "name": "New Search Algorithm",
+  "status": "Testing",
+  "traffic_percentage": 25,
+  "last_modified": "2026-05-03",
+  "targeted_segments": ["beta_users", "internal"],
+  "rollout_strategy": "canary",
+  "dependency_states": []
+}
+```
+
+#### Итоговое состояние `search_v2`
+
+| Поле | Значение |
+|---|---|
+| feature_id | search_v2 |
+| name | New Search Algorithm |
+| status | Testing |
+| traffic_percentage | 25% |
+| last_modified | 2026-05-03 |
+| targeted_segments | beta_users, internal |
+| rollout_strategy | canary |
+| dependency_states | — (пусто) |
+
+Изменения: `traffic_percentage` 15 → 25, `last_modified` 2026-03-10 → 2026-05-03. Статус не менялся.

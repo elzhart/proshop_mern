@@ -9,8 +9,11 @@ import Meta from '../components/Meta'
 import {
   listProductDetails,
   createProductReview,
+  listTopProducts,
 } from '../actions/productActions'
 import { PRODUCT_CREATE_REVIEW_RESET } from '../constants/productConstants'
+import useFeature from '../hooks/useFeature'
+import Product from '../components/Product'
 
 const ProductScreen = ({ history, match }) => {
   const [qty, setQty] = useState(1)
@@ -32,6 +35,10 @@ const ProductScreen = ({ history, match }) => {
     error: errorProductReview,
   } = productReviewCreate
 
+  const { active: recsOn } = useFeature('product_recommendations')
+  const productTopRated = useSelector((state) => state.productTopRated)
+  const { products: topProducts = [] } = productTopRated
+
   useEffect(() => {
     if (successProductReview) {
       setRating(0)
@@ -42,6 +49,10 @@ const ProductScreen = ({ history, match }) => {
       dispatch({ type: PRODUCT_CREATE_REVIEW_RESET })
     }
   }, [dispatch, match, successProductReview])
+
+  useEffect(() => {
+    if (recsOn) dispatch(listTopProducts())
+  }, [dispatch, recsOn])
 
   const addToCartHandler = () => {
     history.push(`/cart/${match.params.id}?qty=${qty}`)
@@ -215,6 +226,23 @@ const ProductScreen = ({ history, match }) => {
               </ListGroup>
             </Col>
           </Row>
+          {recsOn && topProducts.length > 0 && (
+            <Row className='mt-4'>
+              <Col>
+                <h2>Customers also bought</h2>
+                <Row>
+                  {topProducts
+                    .filter((p) => p._id !== product._id)
+                    .slice(0, 4)
+                    .map((p) => (
+                      <Col key={p._id} sm={12} md={6} lg={3}>
+                        <Product product={p} />
+                      </Col>
+                    ))}
+                </Row>
+              </Col>
+            </Row>
+          )}
         </>
       )}
     </>

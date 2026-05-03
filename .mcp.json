@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "proshop-features": {
+      "type": "stdio",
+      "command": "/Users/arturelzhanov/IdeaProjects/proshop_mern/mcp-server/.venv/bin/python",
+      "args": [
+        "/Users/arturelzhanov/IdeaProjects/proshop_mern/mcp-server/feature_flags_server.py"
+      ]
+    }
+  }
+}
