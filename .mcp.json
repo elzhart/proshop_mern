@@ -1,10 +1,17 @@
 {
   "mcpServers": {
-    "proshop-features": {
+    "feature-flags": {
       "type": "stdio",
       "command": "/Users/arturelzhanov/IdeaProjects/proshop_mern/mcp-server/.venv/bin/python",
       "args": [
         "/Users/arturelzhanov/IdeaProjects/proshop_mern/mcp-server/feature_flags_server.py"
+      ]
+    },
+    "search-docs": {
+      "type": "stdio",
+      "command": "/Users/arturelzhanov/IdeaProjects/proshop_mern/scripts/rag-indexer/.venv/bin/python",
+      "args": [
+        "/Users/arturelzhanov/IdeaProjects/proshop_mern/mcp-server-docs/docs_search_server.py"
       ]
     }
   }

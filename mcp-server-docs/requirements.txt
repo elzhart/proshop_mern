@@ -1,0 +1,9 @@
+# Runtime deps for the proshop-docs MCP server.
+# In practice this server reuses scripts/rag-indexer/.venv (which already has
+# FlagEmbedding, torch, qdrant-client, langchain-text-splitters cached and the
+# BGE-M3 weights downloaded). Just install fastmcp into that same venv:
+#
+#   scripts/rag-indexer/.venv/bin/pip install -r mcp-server-docs/requirements.txt
+#
+# A separate venv works too — see README.md.
+fastmcp>=3.0
