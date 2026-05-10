@@ -92,12 +92,21 @@ const OrderScreen = ({ match, history }) => {
   ) : error ? (
     <Message variant='danger'>{error}</Message>
   ) : (
-    <>
-      <h1>Order {order._id}</h1>
-      <Row>
-        <Col md={8}>
-          <ListGroup variant='flush'>
-            <ListGroup.Item>
+    <div className='consumer-page consumer-shell-page'>
+      <div className='consumer-page-strip'></div>
+      <div className='consumer-page-head'>
+        <div>
+          <span className='consumer-eyebrow'>Order details</span>
+          <h1>Order {order._id}</h1>
+        </div>
+        <span className={`consumer-pill ${order.isPaid ? 'is-success' : 'is-danger'}`}>
+          {order.isPaid ? 'Paid' : 'Payment due'}
+        </span>
+      </div>
+      <Row className='consumer-two-col'>
+        <Col lg={8}>
+          <ListGroup variant='flush' className='consumer-review-stack'>
+            <ListGroup.Item className='consumer-card'>
               <h2>Shipping</h2>
               <p>
                 <strong>Name: </strong> {order.user.name}
@@ -121,7 +130,7 @@ const OrderScreen = ({ match, history }) => {
               )}
             </ListGroup.Item>
 
-            <ListGroup.Item>
+            <ListGroup.Item className='consumer-card'>
               <h2>Payment Method</h2>
               <p>
                 <strong>Method: </strong>
@@ -134,32 +143,29 @@ const OrderScreen = ({ match, history }) => {
               )}
             </ListGroup.Item>
 
-            <ListGroup.Item>
+            <ListGroup.Item className='consumer-card'>
               <h2>Order Items</h2>
               {order.orderItems.length === 0 ? (
                 <Message>Order is empty</Message>
               ) : (
-                <ListGroup variant='flush'>
+                <ListGroup variant='flush' className='consumer-cart-list compact'>
                   {order.orderItems.map((item, index) => (
-                    <ListGroup.Item key={index}>
-                      <Row>
-                        <Col md={1}>
+                    <ListGroup.Item key={index} className='consumer-cart-row'>
+                        <div className='consumer-cart-image'>
                           <Image
                             src={item.image}
                             alt={item.name}
                             fluid
-                            rounded
                           />
-                        </Col>
-                        <Col>
+                        </div>
+                        <div className='consumer-cart-copy'>
                           <Link to={`/product/${item.product}`}>
                             {item.name}
                           </Link>
-                        </Col>
-                        <Col md={4}>
+                        </div>
+                        <div className='consumer-cart-price'>
                           {item.qty} x ${item.price} = ${item.qty * item.price}
-                        </Col>
-                      </Row>
+                        </div>
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -167,38 +173,28 @@ const OrderScreen = ({ match, history }) => {
             </ListGroup.Item>
           </ListGroup>
         </Col>
-        <Col md={4}>
-          <Card>
-            <ListGroup variant='flush'>
-              <ListGroup.Item>
+        <Col lg={4}>
+          <Card className='consumer-summary-card'>
+            <Card.Body>
                 <h2>Order Summary</h2>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Items</Col>
-                  <Col>${order.itemsPrice}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Shipping</Col>
-                  <Col>${order.shippingPrice}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Tax</Col>
-                  <Col>${order.taxPrice}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Total</Col>
-                  <Col>${order.totalPrice}</Col>
-                </Row>
-              </ListGroup.Item>
+                <div className='consumer-summary-line'>
+                  <span>Items</span>
+                  <strong>${order.itemsPrice}</strong>
+                </div>
+                <div className='consumer-summary-line'>
+                  <span>Shipping</span>
+                  <strong>${order.shippingPrice}</strong>
+                </div>
+                <div className='consumer-summary-line'>
+                  <span>Tax</span>
+                  <strong>${order.taxPrice}</strong>
+                </div>
+                <div className='consumer-summary-line total'>
+                  <span>Total</span>
+                  <strong>${order.totalPrice}</strong>
+                </div>
               {!order.isPaid && (
-                <ListGroup.Item>
+                <div className='consumer-paypal-box'>
                   {loadingPay && <Loader />}
                   {!paypalOn ? (
                     <Message variant='warning'>
@@ -212,28 +208,26 @@ const OrderScreen = ({ match, history }) => {
                       onSuccess={successPaymentHandler}
                     />
                   )}
-                </ListGroup.Item>
+                </div>
               )}
               {loadingDeliver && <Loader />}
               {userInfo &&
                 userInfo.isAdmin &&
                 order.isPaid &&
                 !order.isDelivered && (
-                  <ListGroup.Item>
                     <Button
                       type='button'
-                      className='btn btn-block'
+                      className='consumer-primary-action'
                       onClick={deliverHandler}
                     >
                       Mark As Delivered
                     </Button>
-                  </ListGroup.Item>
                 )}
-            </ListGroup>
+            </Card.Body>
           </Card>
         </Col>
       </Row>
-    </>
+    </div>
   )
 }
 

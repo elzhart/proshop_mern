@@ -123,6 +123,17 @@ Admin routes (`/admin/*`) guarded in UI by `userInfo.isAdmin` redirect and on ba
 npm run data:destroy && npm run data:import
 ```
 
+## Design rules
+
+Дизайн-система проекта разделена по аудитории — у admin и consumer разные design language. При генерации/редактировании UI следуй соответствующему файлу:
+
+- **Admin** (`/admin/*` страницы — Feature Flags, Users, Products, Orders): [`DESIGN.admin.md`](./DESIGN.admin.md) — Light SaaS Clean, slate + emerald accent, tool-feel, NO shadows, 1px borders, density-first
+- **Consumer** (public `/`, `/product/:id`, `/cart`, `/login`, `/register` + auth checkout `/profile`, `/shipping`, `/payment`, `/placeorder`, `/order/:id`): [`DESIGN.consumer.md`](./DESIGN.consumer.md) — Tech-product gradient, zinc + violet→indigo gradient, subtle shadows, shop-feel
+
+Оба файла содержат секцию 11 «Anti-AI-slop Guards» (mandatory) с правилами против AI-look: запрет 2-колоночных comparison-блоков, generic shadcn, неконтролируемых gradients, UX-страдает-ради-картинки. Перед генерацией UI — прочитай эту секцию и project-specific overrides внутри неё (admin запрещает gradients глобально; consumer разрешает controlled gradient на крупных surface'ах как brand signature).
+
+Источник anti-slop правил: [`docs/anti-slop-supplement.md`](./docs/anti-slop-supplement.md).
+
 ## Conventions
 
 Commit and PR naming: `feat: ...` / `fix: ...` / `refactor: ...`. One PR = one logical change. If API changes, describe request/response changes in the PR. Avoid mixing unrelated backend and frontend changes.

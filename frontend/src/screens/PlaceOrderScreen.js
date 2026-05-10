@@ -61,12 +61,17 @@ const PlaceOrderScreen = ({ history }) => {
   }
 
   return (
-    <>
+    <div className='consumer-page consumer-checkout-page'>
       <CheckoutSteps step1 step2 step3 step4 />
-      <Row>
-        <Col md={8}>
-          <ListGroup variant='flush'>
-            <ListGroup.Item>
+      <Row className='consumer-two-col'>
+        <Col lg={8}>
+          <div className='consumer-checkout-intro'>
+            <span className='consumer-eyebrow'>Review</span>
+            <h1>Place order</h1>
+            <p>Confirm your shipping, payment, and items before checkout.</p>
+          </div>
+          <ListGroup variant='flush' className='consumer-review-stack'>
+            <ListGroup.Item className='consumer-card'>
               <h2>Shipping</h2>
               <p>
                 <strong>Address:</strong>
@@ -76,38 +81,35 @@ const PlaceOrderScreen = ({ history }) => {
               </p>
             </ListGroup.Item>
 
-            <ListGroup.Item>
+            <ListGroup.Item className='consumer-card'>
               <h2>Payment Method</h2>
               <strong>Method: </strong>
               {cart.paymentMethod}
             </ListGroup.Item>
 
-            <ListGroup.Item>
+            <ListGroup.Item className='consumer-card'>
               <h2>Order Items</h2>
               {cart.cartItems.length === 0 ? (
                 <Message>Your cart is empty</Message>
               ) : (
-                <ListGroup variant='flush'>
+                <ListGroup variant='flush' className='consumer-cart-list compact'>
                   {cart.cartItems.map((item, index) => (
-                    <ListGroup.Item key={index}>
-                      <Row>
-                        <Col md={1}>
+                    <ListGroup.Item key={index} className='consumer-cart-row'>
+                        <div className='consumer-cart-image'>
                           <Image
                             src={item.image}
                             alt={item.name}
                             fluid
-                            rounded
                           />
-                        </Col>
-                        <Col>
+                        </div>
+                        <div className='consumer-cart-copy'>
                           <Link to={`/product/${item.product}`}>
                             {item.name}
                           </Link>
-                        </Col>
-                        <Col md={4}>
+                        </div>
+                        <div className='consumer-cart-price'>
                           {item.qty} x ${item.price} = ${item.qty * item.price}
-                        </Col>
-                      </Row>
+                        </div>
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -115,54 +117,43 @@ const PlaceOrderScreen = ({ history }) => {
             </ListGroup.Item>
           </ListGroup>
         </Col>
-        <Col md={4}>
-          <Card>
-            <ListGroup variant='flush'>
-              <ListGroup.Item>
+        <Col lg={4}>
+          <Card className='consumer-summary-card'>
+            <Card.Body>
                 <h2>Order Summary</h2>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Items</Col>
-                  <Col>${cart.itemsPrice}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Shipping</Col>
-                  <Col>${cart.shippingPrice}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Tax</Col>
-                  <Col>${cart.taxPrice}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
-                <Row>
-                  <Col>Total</Col>
-                  <Col>${cart.totalPrice}</Col>
-                </Row>
-              </ListGroup.Item>
-              <ListGroup.Item>
+                <div className='consumer-summary-line'>
+                  <span>Items</span>
+                  <strong>${cart.itemsPrice}</strong>
+                </div>
+                <div className='consumer-summary-line'>
+                  <span>Shipping</span>
+                  <strong>${cart.shippingPrice}</strong>
+                </div>
+                <div className='consumer-summary-line'>
+                  <span>Tax</span>
+                  <strong>${cart.taxPrice}</strong>
+                </div>
+                <div className='consumer-summary-line total'>
+                  <span>Total</span>
+                  <strong>${cart.totalPrice}</strong>
+                </div>
                 {error && <Message variant='danger'>{error}</Message>}
-              </ListGroup.Item>
-              <ListGroup.Item>
                 <Button
                   type='button'
-                  className='btn-block'
+                  className='consumer-primary-action'
                   disabled={cart.cartItems === 0}
                   onClick={placeOrderHandler}
                 >
                   Place Order
                 </Button>
-              </ListGroup.Item>
-            </ListGroup>
+                <p className='consumer-trust-note'>
+                  <i className='fas fa-lock'></i> Secure checkout · encrypted payment
+                </p>
+            </Card.Body>
           </Card>
         </Col>
       </Row>
-    </>
+    </div>
   )
 }
 

@@ -1,207 +1,246 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { Table, Badge, ProgressBar, Row, Col, Card, OverlayTrigger, Popover } from 'react-bootstrap'
-import Loader from '../components/Loader'
-import { useFeaturesContext, isFeatureActive } from '../context/FeaturesContext'
-
-const STATUS_VARIANT = {
-  Enabled: 'success',
-  Testing: 'warning',
-  Disabled: 'secondary',
-}
-
-const PRIORITY_VARIANT = (p) => {
-  if (!p) return 'light'
-  if (p.startsWith('Must')) return 'danger'
-  if (p === 'Core') return 'primary'
-  if (p === 'Skip') return 'dark'
-  return 'info'
-}
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useSelector } from 'react-redux'
+import { useFeaturesContext } from '../context/FeaturesContext'
+import useFeatureOverrides from '../hooks/useFeatureOverrides'
+import StatCard from '../components/admin/StatCard'
+import FilterChip from '../components/admin/FilterChip'
+import SearchInput from '../components/admin/SearchInput'
+import FeatureRow from '../components/admin/FeatureRow'
+import SkeletonRow from '../components/admin/SkeletonRow'
+import EmptyState from '../components/admin/EmptyState'
+import ErrorState from '../components/admin/ErrorState'
+import '../styles/admin.css'
 
 const WIRED_FEATURES = ['image_lazy_loading', 'paypal_express_buttons', 'product_recommendations']
 
-const truncate = (s, n) => (!s ? '' : s.length <= n ? s : s.slice(0, n - 1) + '…')
+const FILTER_OPTIONS = [
+  { key: 'all',      label: 'All'      },
+  { key: 'Enabled',  label: 'Enabled'  },
+  { key: 'Testing',  label: 'Testing'  },
+  { key: 'Disabled', label: 'Disabled' },
+]
 
-const DescriptionCell = ({ id, feature, info }) => {
-  if (!info) return <small className='text-muted'>—</small>
-  const popover = (
-    <Popover id={`pop-${id}`} style={{ maxWidth: 460 }}>
-      <Popover.Title as='strong'>{feature.name}</Popover.Title>
-      <Popover.Content>
-        <p className='mb-2'>{info.code_state}</p>
-        <div className='mb-1'>
-          <strong>Сложность:</strong> {info.complexity}/10{' '}
-          <Badge variant={PRIORITY_VARIANT(info.priority)} className='ml-1'>
-            {info.priority}
-          </Badge>{' '}
-          <span>Figma: {info.figma_rating}</span>
-        </div>
-        {info.note && (
-          <div className='mt-2 p-2' style={{ background: '#fff8e1', borderLeft: '3px solid #f0ad4e' }}>
-            <small><strong>Note:</strong> {info.note}</small>
-          </div>
-        )}
-        {feature.description && (
-          <details className='mt-2'>
-            <summary><small className='text-muted'>spec.description</small></summary>
-            <small>{feature.description}</small>
-          </details>
-        )}
-      </Popover.Content>
-    </Popover>
-  )
-  return (
-    <OverlayTrigger trigger={['hover', 'focus']} placement='left' overlay={popover}>
-      <span style={{ cursor: 'help' }}>{truncate(info.code_state, 60)}</span>
-    </OverlayTrigger>
-  )
-}
+const STATUS_FROM_TRAFFIC = (t) =>
+  t === 0 ? 'Disabled' : t === 100 ? 'Enabled' : 'Testing'
 
-const DashboardFeaturesScreen = () => {
+const DashboardFeaturesScreen = ({ history }) => {
   const { features, bucket, connected } = useFeaturesContext()
-  const [descriptions, setDescriptions] = useState({})
+  const { overrides, setTraffic, resetOne, resetAll, version } = useFeatureOverrides()
+  const userLogin = useSelector((state) => state.userLogin)
+  const { userInfo } = userLogin
 
+  const [descriptions, setDescriptions] = useState({})
+  const [descError, setDescError] = useState(false)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const chipRefs = useRef([])
+
+  useEffect(() => {
+    if (!userInfo || !userInfo.isAdmin) history.push('/login')
+  }, [history, userInfo])
+
+  // Descriptions fetch (one-shot, optional)
   useEffect(() => {
     let cancelled = false
     fetch('/api/features/descriptions')
-      .then((r) => (r.ok ? r.json() : {}))
-      .then((d) => !cancelled && setDescriptions(d))
-      .catch(() => {})
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((d) => { if (!cancelled) setDescriptions(d) })
+      .catch(() => { if (!cancelled) setDescError(true) })
     return () => { cancelled = true }
   }, [])
 
+  // Search debounce
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 200)
+    return () => clearTimeout(t)
+  }, [search])
+
+  // Apply local overrides on top of features.json
+  const effectiveFeatures = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(features).map(([id, f]) => {
+        const o = overrides[id]
+        if (!o) return [id, { ...f, _overridden: false }]
+        const traffic = o.traffic
+        return [id, {
+          ...f,
+          traffic_percentage: traffic,
+          status: STATUS_FROM_TRAFFIC(traffic),
+          _overridden: true,
+        }]
+      })
+    )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [features, version])
+
+  // Counts for stats and chip labels
   const stats = useMemo(() => {
-    const list = Object.values(features)
+    const list = Object.values(effectiveFeatures)
     return {
-      total: list.length,
-      enabled: list.filter((f) => f.status === 'Enabled').length,
-      testing: list.filter((f) => f.status === 'Testing').length,
+      total:    list.length,
+      enabled:  list.filter((f) => f.status === 'Enabled').length,
+      testing:  list.filter((f) => f.status === 'Testing').length,
       disabled: list.filter((f) => f.status === 'Disabled').length,
     }
-  }, [features])
+  }, [effectiveFeatures])
 
-  const hasFeatures = Object.keys(features).length > 0
+  // Filtered + searched
+  const visibleFeatures = useMemo(() => {
+    const q = debouncedSearch.trim().toLowerCase()
+    return Object.entries(effectiveFeatures).filter(([id, f]) => {
+      if (statusFilter !== 'all' && f.status !== statusFilter) return false
+      if (q) {
+        if (!f.name.toLowerCase().includes(q) && !id.toLowerCase().includes(q)) return false
+      }
+      return true
+    })
+  }, [effectiveFeatures, debouncedSearch, statusFilter])
+
+  const hasFeatures   = Object.keys(features).length > 0
+  const hasOverrides  = Object.keys(overrides).length > 0
+  const featuresError = !hasFeatures && !connected && Object.keys(features).length === 0
+
+  // Chip keyboard navigation (←/→/Home/End)
+  const handleChipKeyDown = (idx) => (e) => {
+    const last = FILTER_OPTIONS.length - 1
+    let next = null
+    if (e.key === 'ArrowRight') next = idx === last ? 0 : idx + 1
+    else if (e.key === 'ArrowLeft') next = idx === 0 ? last : idx - 1
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End')  next = last
+    if (next !== null) {
+      e.preventDefault()
+      setStatusFilter(FILTER_OPTIONS[next].key)
+      const node = chipRefs.current[next]
+      if (node && node.focus) node.focus()
+    }
+  }
+
+  const handleClearFilters = () => {
+    setSearch('')
+    setStatusFilter('all')
+  }
 
   return (
-    <>
-      <Row className='align-items-center mb-3'>
-        <Col>
-          <h1 className='mb-0'>Dashboard Features</h1>
-          <small className='text-muted'>
-            Live view of <code>features.json</code>. Edit the file — the table updates automatically.
-            Your traffic bucket: <strong>{bucket}</strong> (0–99, persisted in localStorage).
-          </small>
-        </Col>
-        <Col xs='auto'>
-          <Badge variant={connected ? 'success' : 'secondary'} style={{ fontSize: '0.9rem' }}>
-            {connected ? '● live' : '○ offline'}
-          </Badge>
-        </Col>
-      </Row>
+    <div className='admin-root'>
+      <header className='admin-header'>
+        <div className='admin-header__left'>
+          <div className='admin-eyebrow'>Admin · Internal Tools</div>
+          <h1 className='admin-h1'>Feature Flags</h1>
+          <p className='admin-subtitle'>
+            View of <code>features.json</code> with local overrides for testing.
+            Persist via the <code>feature-flags</code> MCP server.
+            Your traffic bucket: <strong>{bucket}</strong>.
+          </p>
+          {hasOverrides && (
+            <button type='button' className='admin-reset-all-link' onClick={resetAll}>
+              Reset all local overrides
+            </button>
+          )}
+        </div>
+        <div aria-live='polite'>
+          <span
+            className={`admin-live-pill admin-live-pill--${connected ? 'on' : 'off'}`}
+            aria-label={connected ? 'Live: connected to SSE' : 'Offline: SSE disconnected'}
+          >
+            <span className='admin-live-pill__dot' aria-hidden='true' />
+            {connected ? 'Live' : 'Offline'}
+          </span>
+        </div>
+      </header>
 
-      {hasFeatures && (
-        <Row className='mb-3'>
-          <Col md={3}>
-            <Card body className='text-center'>
-              <h5 className='mb-0'>{stats.total}</h5>
-              <small className='text-muted'>Total</small>
-            </Card>
-          </Col>
-          <Col md={3}>
-            <Card body className='text-center border-success'>
-              <h5 className='text-success mb-0'>{stats.enabled}</h5>
-              <small className='text-muted'>Enabled</small>
-            </Card>
-          </Col>
-          <Col md={3}>
-            <Card body className='text-center border-warning'>
-              <h5 className='text-warning mb-0'>{stats.testing}</h5>
-              <small className='text-muted'>Testing</small>
-            </Card>
-          </Col>
-          <Col md={3}>
-            <Card body className='text-center border-secondary'>
-              <h5 className='text-secondary mb-0'>{stats.disabled}</h5>
-              <small className='text-muted'>Disabled</small>
-            </Card>
-          </Col>
-        </Row>
-      )}
+      <div className='admin-stats'>
+        <StatCard label='Total'    value={hasFeatures ? stats.total    : '—'} />
+        <StatCard label='Enabled'  value={hasFeatures ? stats.enabled  : '—'} variant='enabled' />
+        <StatCard label='Testing'  value={hasFeatures ? stats.testing  : '—'} variant='testing' />
+        <StatCard label='Disabled' value={hasFeatures ? stats.disabled : '—'} variant='disabled' />
+      </div>
 
-      {!hasFeatures ? (
-        <Loader />
+      <div className='admin-controls'>
+        <div className='admin-controls__search'>
+          <SearchInput value={search} onChange={setSearch} disabled={!hasFeatures} />
+        </div>
+        <div className='admin-controls__chips' role='tablist' aria-label='Filter by status'>
+          {FILTER_OPTIONS.map((opt, idx) => {
+            const active = statusFilter === opt.key
+            const count = opt.key === 'all'
+              ? stats.total
+              : stats[opt.key.toLowerCase()]
+            return (
+              <FilterChip
+                key={opt.key}
+                ref={(el) => (chipRefs.current[idx] = el)}
+                label={opt.label}
+                count={hasFeatures ? count : 0}
+                active={active}
+                tabIndex={active ? 0 : -1}
+                onClick={() => setStatusFilter(opt.key)}
+                onKeyDown={handleChipKeyDown(idx)}
+              />
+            )
+          })}
+        </div>
+      </div>
+
+      {featuresError ? (
+        <ErrorState
+          message='Make sure the backend is running on port 5001.'
+          onRetry={() => window.location.reload()}
+        />
+      ) : !hasFeatures ? (
+        <div className='admin-table-wrap'>
+          <table className='admin-table' aria-label='Feature flags' aria-busy='true'>
+            <thead>
+              <tr>
+                <th>ID</th><th>Name</th><th>Status</th><th>Traffic</th><th>For me</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {[0, 1, 2, 3, 4].map((i) => <SkeletonRow key={i} />)}
+            </tbody>
+          </table>
+        </div>
+      ) : visibleFeatures.length === 0 ? (
+        <EmptyState
+          search={debouncedSearch}
+          filter={statusFilter}
+          onClear={handleClearFilters}
+        />
       ) : (
-        <Table striped hover responsive className='table-sm'>
-          <thead>
-            <tr>
-              <th>Feature ID</th>
-              <th>Name</th>
-              <th>Status</th>
-              <th>Traffic</th>
-              <th>For me</th>
-              <th>Wired</th>
-              <th style={{ minWidth: 280 }}>Описание (наведи)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(features).map(([id, f]) => {
-              const active = isFeatureActive(f, bucket)
-              const wired = WIRED_FEATURES.includes(id)
-              const info = descriptions[id]
-              return (
-                <tr key={id}>
-                  <td><code>{id}</code></td>
-                  <td>{f.name}</td>
-                  <td>
-                    <Badge variant={STATUS_VARIANT[f.status] || 'light'}>{f.status}</Badge>
-                  </td>
-                  <td style={{ minWidth: 120 }}>
-                    <ProgressBar
-                      now={f.traffic_percentage}
-                      label={`${f.traffic_percentage}%`}
-                      variant={STATUS_VARIANT[f.status] || 'info'}
-                    />
-                  </td>
-                  <td>
-                    <Badge variant={active ? 'success' : 'secondary'}>
-                      {active ? 'ON' : 'off'}
-                    </Badge>
-                  </td>
-                  <td>
-                    {wired ? (
-                      <Badge variant='info'>wired</Badge>
-                    ) : (
-                      <small className='text-muted'>—</small>
-                    )}
-                  </td>
-                  <td>
-                    <DescriptionCell id={id} feature={f} info={info} />
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </Table>
+        <div className='admin-table-wrap'>
+          <table className='admin-table' aria-label='Feature flags'>
+            <thead>
+              <tr>
+                <th>ID</th><th>Name</th><th>Status</th><th>Traffic</th><th>For me</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleFeatures.map(([id, f]) => (
+                <FeatureRow
+                  key={id}
+                  id={id}
+                  effective={f}
+                  upstreamTraffic={features[id] ? features[id].traffic_percentage : 0}
+                  bucket={bucket}
+                  description={descriptions[id]}
+                  wired={WIRED_FEATURES.includes(id)}
+                  isOverridden={f._overridden}
+                  onSetTraffic={setTraffic}
+                  onReset={resetOne}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
-      <Card body className='mt-3 bg-light'>
-        <h6>Wired features (real impact on the app):</h6>
-        <ul className='mb-0'>
-          <li>
-            <code>image_lazy_loading</code> — toggles <code>loading="lazy"</code> on product images.
-          </li>
-          <li>
-            <code>paypal_express_buttons</code> — kill switch for the PayPal button on the Order screen.
-          </li>
-          <li>
-            <code>product_recommendations</code> — adds "Customers also bought" row on Product screen.
-          </li>
-        </ul>
-        <small className='text-muted'>
-          Колонка «Описание» — наведи курсор на текст, чтобы увидеть подробности из{' '}
-          <code>features-descriptions.json</code>: код в репо, сложность, приоритет, аномалии.
-        </small>
-      </Card>
-    </>
+      <div className='admin-footer-hint'>
+        Wired features (real impact): <code>search_v2</code> · <code>paypal_express_buttons</code> · <code>image_lazy_loading</code>
+        — наведи на ⚡ в колонке ID для подробностей.
+        {descError && ' Note: feature descriptions failed to load — only basic info shown.'}
+      </div>
+    </div>
   )
 }
 

@@ -1,32 +1,35 @@
-import axios from 'axios'
-import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Form, Button } from 'react-bootstrap'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import Message from '../components/Message'
-import Loader from '../components/Loader'
-import FormContainer from '../components/FormContainer'
+import BackLink from '../components/admin/BackLink'
+import AdminPageHeader from '../components/admin/AdminPageHeader'
+import FormField from '../components/admin/FormField'
+import TextInput from '../components/admin/TextInput'
+import NumberInput from '../components/admin/NumberInput'
+import Textarea from '../components/admin/Textarea'
+import FileUploadZone from '../components/admin/FileUploadZone'
+import Banner from '../components/admin/Banner'
+import ErrorState from '../components/admin/ErrorState'
 import { listProductDetails, updateProduct } from '../actions/productActions'
 import { PRODUCT_UPDATE_RESET } from '../constants/productConstants'
+import '../styles/admin.css'
 
 const ProductEditScreen = ({ match, history }) => {
   const productId = match.params.id
+  const dispatch = useDispatch()
 
   const [name, setName] = useState('')
-  const [price, setPrice] = useState(0)
+  const [price, setPrice] = useState('')
   const [image, setImage] = useState('')
   const [brand, setBrand] = useState('')
   const [category, setCategory] = useState('')
-  const [countInStock, setCountInStock] = useState(0)
+  const [countInStock, setCountInStock] = useState('')
   const [description, setDescription] = useState('')
-  const [uploading, setUploading] = useState(false)
+  const [banner, setBanner] = useState(null)
 
-  const dispatch = useDispatch()
-
-  const productDetails = useSelector((state) => state.productDetails)
+  const productDetails = useSelector((s) => s.productDetails)
   const { loading, error, product } = productDetails
 
-  const productUpdate = useSelector((state) => state.productUpdate)
+  const productUpdate = useSelector((s) => s.productUpdate)
   const {
     loading: loadingUpdate,
     error: errorUpdate,
@@ -52,144 +55,131 @@ const ProductEditScreen = ({ match, history }) => {
     }
   }, [dispatch, history, productId, product, successUpdate])
 
-  const uploadFileHandler = async (e) => {
-    const file = e.target.files[0]
-    const formData = new FormData()
-    formData.append('image', file)
-    setUploading(true)
-
-    try {
-      const config = {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
-
-      const { data } = await axios.post('/api/upload', formData, config)
-
-      setImage(data)
-      setUploading(false)
-    } catch (error) {
-      console.error(error)
-      setUploading(false)
-    }
-  }
+  useEffect(() => {
+    if (errorUpdate) setBanner({ variant: 'error', message: errorUpdate })
+  }, [errorUpdate])
 
   const submitHandler = (e) => {
     e.preventDefault()
-    dispatch(
-      updateProduct({
-        _id: productId,
-        name,
-        price,
-        image,
-        brand,
-        category,
-        description,
-        countInStock,
-      })
-    )
+    if (!name.trim() || !brand.trim() || !category.trim()) return
+    dispatch(updateProduct({
+      _id: productId,
+      name: name.trim(),
+      price: Number(price) || 0,
+      image,
+      brand: brand.trim(),
+      category: category.trim(),
+      description: description.trim(),
+      countInStock: Number(countInStock) || 0,
+    }))
   }
 
+  const updatedAt = product && product.updatedAt
+    ? `last updated ${String(product.updatedAt).substring(0, 10)}`
+    : null
+  const subtitle = product && product.name && product._id === productId
+    ? [product.name, updatedAt].filter(Boolean).join(' · ')
+    : null
+
   return (
-    <>
-      <Link to='/admin/productlist' className='btn btn-light my-3'>
-        Go Back
-      </Link>
-      <FormContainer>
-        <h1>Edit Product</h1>
-        {loadingUpdate && <Loader />}
-        {errorUpdate && <Message variant='danger'>{errorUpdate}</Message>}
-        {loading ? (
-          <Loader />
-        ) : error ? (
-          <Message variant='danger'>{error}</Message>
-        ) : (
-          <Form onSubmit={submitHandler}>
-            <Form.Group controlId='name'>
-              <Form.Label>Name</Form.Label>
-              <Form.Control
-                type='name'
-                placeholder='Enter name'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+    <div className='admin-root'>
+      <BackLink to='/admin/productlist' />
+      <AdminPageHeader title='Edit Product' subtitle={subtitle} />
 
-            <Form.Group controlId='price'>
-              <Form.Label>Price</Form.Label>
-              <Form.Control
-                type='number'
-                placeholder='Enter price'
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+      {banner && (
+        <Banner
+          variant={banner.variant}
+          message={banner.message}
+          onClose={() => setBanner(null)}
+        />
+      )}
 
-            <Form.Group controlId='image'>
-              <Form.Label>Image</Form.Label>
-              <Form.Control
-                type='text'
-                placeholder='Enter image url'
-                value={image}
-                onChange={(e) => setImage(e.target.value)}
-              ></Form.Control>
-              <Form.File
-                id='image-file'
-                label='Choose File'
-                custom
-                onChange={uploadFileHandler}
-              ></Form.File>
-              {uploading && <Loader />}
-            </Form.Group>
+      {error ? (
+        <ErrorState
+          message='We could not load this product. Retry before editing.'
+          onRetry={() => dispatch(listProductDetails(productId))}
+        />
+      ) : (
+        <div className='admin-form-card admin-form-card--wide'>
+          {loading ? (
+            <div>
+              <div className='admin-skeleton admin-skeleton-input' style={{ marginBottom: 24 }} />
+              <div className='admin-skeleton' style={{ width: '100%', height: 120, marginBottom: 24, borderRadius: 10 }} />
+              <div className='admin-skeleton admin-skeleton-input' style={{ marginBottom: 24 }} />
+              <div className='admin-skeleton' style={{ width: '100%', height: 96, marginBottom: 24, borderRadius: 6 }} />
+              <div className='admin-skeleton' style={{ width: 100, height: 34, borderRadius: 6 }} />
+            </div>
+          ) : (
+            <form onSubmit={submitHandler} noValidate>
+              <FormField id='name' label='Name' required>
+                <TextInput value={name} onChange={setName} placeholder='Enter name' />
+              </FormField>
 
-            <Form.Group controlId='brand'>
-              <Form.Label>Brand</Form.Label>
-              <Form.Control
-                type='text'
-                placeholder='Enter brand'
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+              <FormField id='image' label='Image' helper='Upload a file or paste a URL below.'>
+                <FileUploadZone imageUrl={image} onChange={setImage} disabled={loadingUpdate} />
+              </FormField>
 
-            <Form.Group controlId='countInStock'>
-              <Form.Label>Count In Stock</Form.Label>
-              <Form.Control
-                type='number'
-                placeholder='Enter countInStock'
-                value={countInStock}
-                onChange={(e) => setCountInStock(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+              <FormField id='imageurl' label='or use image URL'>
+                <TextInput
+                  value={image}
+                  onChange={setImage}
+                  placeholder='https://…'
+                />
+              </FormField>
 
-            <Form.Group controlId='category'>
-              <Form.Label>Category</Form.Label>
-              <Form.Control
-                type='text'
-                placeholder='Enter category'
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+              <div className='admin-inline-group'>
+                <FormField id='price' label='Price' required>
+                  <NumberInput
+                    value={price}
+                    onChange={setPrice}
+                    prefix='$'
+                    min={0}
+                    step={0.01}
+                  />
+                </FormField>
+                <FormField id='stock' label='Count In Stock'>
+                  <NumberInput
+                    value={countInStock}
+                    onChange={setCountInStock}
+                    suffix='pcs'
+                    min={0}
+                    step={1}
+                  />
+                </FormField>
+              </div>
 
-            <Form.Group controlId='description'>
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                type='text'
-                placeholder='Enter description'
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+              <div className='admin-inline-group'>
+                <FormField id='brand' label='Brand' required>
+                  <TextInput value={brand} onChange={setBrand} placeholder='Enter brand' />
+                </FormField>
+                <FormField id='category' label='Category' required>
+                  <TextInput value={category} onChange={setCategory} placeholder='Enter category' />
+                </FormField>
+              </div>
 
-            <Button type='submit' variant='primary'>
-              Update
-            </Button>
-          </Form>
-        )}
-      </FormContainer>
-    </>
+              <FormField id='description' label='Description'>
+                <Textarea
+                  value={description}
+                  onChange={setDescription}
+                  maxLength={500}
+                  placeholder='Tell people about this product'
+                />
+              </FormField>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+                <button
+                  type='submit'
+                  className='admin-btn admin-btn--primary'
+                  disabled={loadingUpdate}
+                >
+                  {loadingUpdate ? 'Updating…' : 'Update'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 

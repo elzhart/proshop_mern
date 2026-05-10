@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { Row, Col, Image, ListGroup, Card, Button, Form } from 'react-bootstrap'
+import { Row, Col, Image, ListGroup, Button, Form } from 'react-bootstrap'
 import Rating from '../components/Rating'
 import Message from '../components/Message'
 import Loader from '../components/Loader'
@@ -69,10 +69,7 @@ const ProductScreen = ({ history, match }) => {
   }
 
   return (
-    <>
-      <Link className='btn btn-light my-3' to='/'>
-        Go Back
-      </Link>
+    <div className='consumer-page consumer-product-page'>
       {loading ? (
         <Loader />
       ) : error ? (
@@ -80,92 +77,101 @@ const ProductScreen = ({ history, match }) => {
       ) : (
         <>
           <Meta title={product.name} />
-          <Row>
-            <Col md={6}>
-              <Image src={product.image} alt={product.name} fluid />
-            </Col>
-            <Col md={3}>
-              <ListGroup variant='flush'>
-                <ListGroup.Item>
-                  <h3>{product.name}</h3>
-                </ListGroup.Item>
-                <ListGroup.Item>
-                  <Rating
-                    value={product.rating}
-                    text={`${product.numReviews} reviews`}
-                  />
-                </ListGroup.Item>
-                <ListGroup.Item>Price: ${product.price}</ListGroup.Item>
-                <ListGroup.Item>
-                  Description: {product.description}
-                </ListGroup.Item>
-              </ListGroup>
-            </Col>
-            <Col md={3}>
-              <Card>
-                <ListGroup variant='flush'>
-                  <ListGroup.Item>
-                    <Row>
-                      <Col>Price:</Col>
-                      <Col>
-                        <strong>${product.price}</strong>
-                      </Col>
-                    </Row>
-                  </ListGroup.Item>
+          <div className='consumer-breadcrumb'>
+            <Link to='/'>Home</Link>
+            <span>/</span>
+            <span>{product.category}</span>
+            <span>/</span>
+            <strong>{product.name}</strong>
+          </div>
 
-                  <ListGroup.Item>
-                    <Row>
-                      <Col>Status:</Col>
-                      <Col>
-                        {product.countInStock > 0 ? 'In Stock' : 'Out Of Stock'}
-                      </Col>
-                    </Row>
-                  </ListGroup.Item>
+          <section className='consumer-product-detail'>
+            <div className='consumer-gallery'>
+              <div className='consumer-gallery-main'>
+                <Image src={product.image} alt={product.name} fluid />
+                <span className='consumer-product-badge'>Featured</span>
+              </div>
+              <div className='consumer-gallery-thumbs'>
+                {[1, 2, 3].map((thumb) => (
+                  <div className='consumer-thumb is-active' key={thumb}>
+                    <Image src={product.image} alt={`${product.name} view ${thumb}`} fluid />
+                  </div>
+                ))}
+              </div>
+            </div>
 
-                  {product.countInStock > 0 && (
-                    <ListGroup.Item>
-                      <Row>
-                        <Col>Qty</Col>
-                        <Col>
-                          <Form.Control
-                            as='select'
-                            value={qty}
-                            onChange={(e) => setQty(e.target.value)}
-                          >
-                            {[...Array(product.countInStock).keys()].map(
-                              (x) => (
-                                <option key={x + 1} value={x + 1}>
-                                  {x + 1}
-                                </option>
-                              )
-                            )}
-                          </Form.Control>
-                        </Col>
-                      </Row>
-                    </ListGroup.Item>
-                  )}
+            <div className='consumer-product-info'>
+              <span className='consumer-chip'>{product.brand || 'ProShop'} · {product.category}</span>
+              <h1>{product.name}</h1>
+              <Rating
+                value={product.rating}
+                text={`${product.numReviews} reviews`}
+              />
+              <div className='consumer-price'>${product.price}</div>
+              <p>{product.description}</p>
 
-                  <ListGroup.Item>
-                    <Button
-                      onClick={addToCartHandler}
-                      className='btn-block'
-                      type='button'
-                      disabled={product.countInStock === 0}
-                    >
-                      Add To Cart
-                    </Button>
-                  </ListGroup.Item>
-                </ListGroup>
-              </Card>
-            </Col>
-          </Row>
-          <Row>
-            <Col md={6}>
+              <div
+                className={`consumer-stock ${product.countInStock > 0 ? 'is-in' : 'is-out'}`}
+              >
+                <span></span>
+                {product.countInStock > 0
+                  ? `In stock · ${product.countInStock} available`
+                  : 'Out of stock — notify me'}
+              </div>
+
+              {product.countInStock > 0 && (
+                <Form.Group controlId='qty' className='consumer-qty-group'>
+                  <Form.Label>Quantity</Form.Label>
+                  <Form.Control
+                    as='select'
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    className='consumer-input'
+                  >
+                    {[...Array(product.countInStock).keys()].map((x) => (
+                      <option key={x + 1} value={x + 1}>
+                        {x + 1}
+                      </option>
+                    ))}
+                  </Form.Control>
+                </Form.Group>
+              )}
+
+              <Button
+                onClick={addToCartHandler}
+                className='consumer-primary-action'
+                type='button'
+                disabled={product.countInStock === 0}
+              >
+                Add To Cart · ${(Number(product.price) * Number(qty)).toFixed(2)}
+              </Button>
+
+              <div className='consumer-info-grid'>
+                <div>
+                  <span>SKU</span>
+                  <strong>{product._id && product._id.substring(0, 8).toUpperCase()}</strong>
+                </div>
+                <div>
+                  <span>Shipping</span>
+                  <strong>Free · 1-2 days</strong>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className='consumer-card consumer-reviews'>
+            <div className='consumer-tabs'>
+              <button className='is-active'>Reviews ({product.numReviews})</button>
+              <button>Details</button>
+              <button>Shipping</button>
+            </div>
+            <Row>
+              <Col lg={7}>
               <h2>Reviews</h2>
               {product.reviews.length === 0 && <Message>No Reviews</Message>}
               <ListGroup variant='flush'>
                 {product.reviews.map((review) => (
-                  <ListGroup.Item key={review._id}>
+                  <ListGroup.Item key={review._id} className='consumer-review-item'>
                     <strong>{review.name}</strong>
                     <Rating value={review.rating} />
                     <p>{review.createdAt.substring(0, 10)}</p>
@@ -224,28 +230,49 @@ const ProductScreen = ({ history, match }) => {
                   )}
                 </ListGroup.Item>
               </ListGroup>
-            </Col>
-          </Row>
+              </Col>
+              <Col lg={5}>
+                <div className='consumer-card consumer-spec-card'>
+                  <h2>Why it fits</h2>
+                  <p>{product.description}</p>
+                  <div className='consumer-info-grid'>
+                    <div>
+                      <span>Category</span>
+                      <strong>{product.category}</strong>
+                    </div>
+                    <div>
+                      <span>Brand</span>
+                      <strong>{product.brand || 'ProShop'}</strong>
+                    </div>
+                  </div>
+                </div>
+              </Col>
+            </Row>
+          </section>
+
           {recsOn && topProducts.length > 0 && (
-            <Row className='mt-4'>
-              <Col>
-                <h2>Customers also bought</h2>
-                <Row>
+            <section className='consumer-products-section'>
+              <div className='consumer-section-head'>
+                <div>
+                  <span className='consumer-eyebrow'>Recommended</span>
+                  <h2>Customers also bought</h2>
+                </div>
+              </div>
+                <Row className='consumer-product-grid'>
                   {topProducts
                     .filter((p) => p._id !== product._id)
                     .slice(0, 4)
                     .map((p) => (
-                      <Col key={p._id} sm={12} md={6} lg={3}>
+                      <Col key={p._id} sm={12} md={6} lg={3} className='mb-4'>
                         <Product product={p} />
                       </Col>
                     ))}
                 </Row>
-              </Col>
-            </Row>
+            </section>
           )}
         </>
       )}
-    </>
+    </div>
   )
 }
 

@@ -1,26 +1,32 @@
-import React, { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
-import { Form, Button } from 'react-bootstrap'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import Message from '../components/Message'
-import Loader from '../components/Loader'
-import FormContainer from '../components/FormContainer'
+import BackLink from '../components/admin/BackLink'
+import AdminPageHeader from '../components/admin/AdminPageHeader'
+import FormField from '../components/admin/FormField'
+import TextInput from '../components/admin/TextInput'
+import Checkbox from '../components/admin/Checkbox'
+import Banner from '../components/admin/Banner'
+import ErrorState from '../components/admin/ErrorState'
 import { getUserDetails, updateUser } from '../actions/userActions'
 import { USER_UPDATE_RESET } from '../constants/userConstants'
+import '../styles/admin.css'
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const UserEditScreen = ({ match, history }) => {
   const userId = match.params.id
+  const dispatch = useDispatch()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [isAdmin, setIsAdmin] = useState(false)
+  const [emailError, setEmailError] = useState(null)
+  const [banner, setBanner] = useState(null)
 
-  const dispatch = useDispatch()
-
-  const userDetails = useSelector((state) => state.userDetails)
+  const userDetails = useSelector((s) => s.userDetails)
   const { loading, error, user } = userDetails
 
-  const userUpdate = useSelector((state) => state.userUpdate)
+  const userUpdate = useSelector((s) => s.userUpdate)
   const {
     loading: loadingUpdate,
     error: errorUpdate,
@@ -42,62 +48,99 @@ const UserEditScreen = ({ match, history }) => {
     }
   }, [dispatch, history, userId, user, successUpdate])
 
-  const submitHandler = (e) => {
-    e.preventDefault()
-    dispatch(updateUser({ _id: userId, name, email, isAdmin }))
+  useEffect(() => {
+    if (errorUpdate) setBanner({ variant: 'error', message: errorUpdate })
+  }, [errorUpdate])
+
+  const validateEmail = (value) => {
+    if (!value) return 'Email is required'
+    if (!EMAIL_RE.test(value)) return 'Must be a valid email address'
+    return null
   }
 
+  const submitHandler = (e) => {
+    e.preventDefault()
+    const err = validateEmail(email)
+    setEmailError(err)
+    if (err) return
+    if (!name.trim()) return
+    dispatch(updateUser({ _id: userId, name: name.trim(), email: email.trim(), isAdmin }))
+  }
+
+  const createdAt = user && user.createdAt
+    ? `created ${String(user.createdAt).substring(0, 10)}`
+    : null
+  const subtitle = user && user.email && user._id === userId
+    ? [user.email, createdAt].filter(Boolean).join(' · ')
+    : null
+
   return (
-    <>
-      <Link to='/admin/userlist' className='btn btn-light my-3'>
-        Go Back
-      </Link>
-      <FormContainer>
-        <h1>Edit User</h1>
-        {loadingUpdate && <Loader />}
-        {errorUpdate && <Message variant='danger'>{errorUpdate}</Message>}
-        {loading ? (
-          <Loader />
-        ) : error ? (
-          <Message variant='danger'>{error}</Message>
-        ) : (
-          <Form onSubmit={submitHandler}>
-            <Form.Group controlId='name'>
-              <Form.Label>Name</Form.Label>
-              <Form.Control
-                type='name'
-                placeholder='Enter name'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+    <div className='admin-root'>
+      <BackLink to='/admin/userlist' />
+      <AdminPageHeader title='Edit User' subtitle={subtitle} />
 
-            <Form.Group controlId='email'>
-              <Form.Label>Email Address</Form.Label>
-              <Form.Control
-                type='email'
-                placeholder='Enter email'
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              ></Form.Control>
-            </Form.Group>
+      {banner && (
+        <Banner
+          variant={banner.variant}
+          message={banner.message}
+          onClose={() => setBanner(null)}
+        />
+      )}
 
-            <Form.Group controlId='isadmin'>
-              <Form.Check
-                type='checkbox'
-                label='Is Admin'
-                checked={isAdmin}
-                onChange={(e) => setIsAdmin(e.target.checked)}
-              ></Form.Check>
-            </Form.Group>
+      {error ? (
+        <ErrorState
+          message='We could not load this user. Retry before editing.'
+          onRetry={() => dispatch(getUserDetails(userId))}
+        />
+      ) : (
+        <div className='admin-form-card'>
+          {loading ? (
+            <div>
+              <div className='admin-skeleton admin-skeleton-input' style={{ marginBottom: 24 }} />
+              <div className='admin-skeleton admin-skeleton-input' style={{ marginBottom: 24 }} />
+              <div className='admin-skeleton' style={{ width: 140, height: 18, marginBottom: 24 }} />
+              <div className='admin-skeleton' style={{ width: 100, height: 34, borderRadius: 6 }} />
+            </div>
+          ) : (
+            <form onSubmit={submitHandler} noValidate>
+              <FormField id='name' label='Name' required>
+                <TextInput value={name} onChange={setName} placeholder='Enter name' />
+              </FormField>
 
-            <Button type='submit' variant='primary'>
-              Update
-            </Button>
-          </Form>
-        )}
-      </FormContainer>
-    </>
+              <FormField
+                id='email'
+                label='Email Address'
+                required
+                helper="We'll never share this."
+                error={emailError}
+              >
+                <TextInput
+                  type='email'
+                  value={email}
+                  onChange={(v) => { setEmail(v); if (emailError) setEmailError(null) }}
+                  onBlur={() => setEmailError(validateEmail(email))}
+                  placeholder='you@example.com'
+                />
+              </FormField>
+
+              <FormField id='isadmin' helper='Grants access to /admin/*'>
+                <Checkbox checked={isAdmin} onChange={setIsAdmin} label='Is Admin' />
+              </FormField>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+                <button
+                  type='submit'
+                  className='admin-btn admin-btn--primary'
+                  disabled={loadingUpdate}
+                >
+                  {loadingUpdate ? 'Updating…' : 'Update'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 

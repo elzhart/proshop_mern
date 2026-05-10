@@ -23,7 +23,7 @@ const ProductCarousel = () => {
   ) : error ? (
     <Message variant='danger'>{error}</Message>
   ) : (
-    <Carousel pause='hover' className='bg-dark'>
+    <Carousel pause='hover' className='consumer-carousel'>
       {products.map((product) => (
         <Carousel.Item key={product._id}>
           <Link to={`/product/${product._id}`}>
@@ -34,9 +34,9 @@ const ProductCarousel = () => {
               loading={lazyOn ? 'lazy' : 'eager'}
             />
             <Carousel.Caption className='carousel-caption'>
-              <h2>
-                {product.name} (${product.price})
-              </h2>
+              <span>Top rated</span>
+              <h2>{product.name}</h2>
+              <p>${product.price}</p>
             </Carousel.Caption>
           </Link>
         </Carousel.Item>

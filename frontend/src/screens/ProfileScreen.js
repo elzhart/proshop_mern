@@ -54,8 +54,18 @@ const ProfileScreen = ({ location, history }) => {
   }
 
   return (
-    <Row>
-      <Col md={3}>
+    <div className='consumer-page consumer-shell-page'>
+      <div className='consumer-page-strip'></div>
+      <div className='consumer-page-head'>
+        <div>
+          <span className='consumer-eyebrow'>Account</span>
+          <h1>Profile</h1>
+        </div>
+        <span className='consumer-pill'>Orders + details</span>
+      </div>
+    <Row className='consumer-two-col'>
+      <Col lg={4}>
+        <div className='consumer-card'>
         <h2>User Profile</h2>
         {message && <Message variant='danger'>{message}</Message>}
         {}
@@ -72,6 +82,7 @@ const ProfileScreen = ({ location, history }) => {
                 type='name'
                 placeholder='Enter name'
                 value={name}
+                className='consumer-input'
                 onChange={(e) => setName(e.target.value)}
               ></Form.Control>
             </Form.Group>
@@ -82,6 +93,7 @@ const ProfileScreen = ({ location, history }) => {
                 type='email'
                 placeholder='Enter email'
                 value={email}
+                className='consumer-input'
                 onChange={(e) => setEmail(e.target.value)}
               ></Form.Control>
             </Form.Group>
@@ -92,6 +104,7 @@ const ProfileScreen = ({ location, history }) => {
                 type='password'
                 placeholder='Enter password'
                 value={password}
+                className='consumer-input'
                 onChange={(e) => setPassword(e.target.value)}
               ></Form.Control>
             </Form.Group>
@@ -102,24 +115,27 @@ const ProfileScreen = ({ location, history }) => {
                 type='password'
                 placeholder='Confirm password'
                 value={confirmPassword}
+                className='consumer-input'
                 onChange={(e) => setConfirmPassword(e.target.value)}
               ></Form.Control>
             </Form.Group>
 
-            <Button type='submit' variant='primary'>
+            <Button type='submit' className='consumer-primary-action'>
               Update
             </Button>
           </Form>
         )}
+        </div>
       </Col>
-      <Col md={9}>
+      <Col lg={8}>
+        <div className='consumer-card consumer-orders-card'>
         <h2>My Orders</h2>
         {loadingOrders ? (
           <Loader />
         ) : errorOrders ? (
           <Message variant='danger'>{errorOrders}</Message>
         ) : (
-          <Table striped bordered hover responsive className='table-sm'>
+          <Table responsive className='consumer-table'>
             <thead>
               <tr>
                 <th>ID</th>
@@ -152,7 +168,7 @@ const ProfileScreen = ({ location, history }) => {
                   </td>
                   <td>
                     <LinkContainer to={`/order/${order._id}`}>
-                      <Button className='btn-sm' variant='light'>
+                      <Button className='consumer-btn consumer-btn-secondary btn-sm'>
                         Details
                       </Button>
                     </LinkContainer>
@@ -162,8 +178,10 @@ const ProfileScreen = ({ location, history }) => {
             </tbody>
           </Table>
         )}
+        </div>
       </Col>
     </Row>
+    </div>
   )
 }
 

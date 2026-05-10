@@ -2,7 +2,6 @@ import React, { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { Row, Col, ListGroup, Image, Form, Button, Card } from 'react-bootstrap'
-import Message from '../components/Message'
 import { addToCart, removeFromCart } from '../actions/cartActions'
 
 const CartScreen = ({ match, location, history }) => {
@@ -30,29 +29,50 @@ const CartScreen = ({ match, location, history }) => {
   }
 
   return (
-    <Row>
-      <Col md={8}>
-        <h1>Shopping Cart</h1>
+    <div className='consumer-page consumer-shell-page'>
+      <div className='consumer-page-strip'></div>
+      <div className='consumer-breadcrumb'>
+        <Link to='/'>Home</Link>
+        <span>/</span>
+        <strong>Cart</strong>
+      </div>
+      <div className='consumer-page-head'>
+        <div>
+          <span className='consumer-eyebrow'>Checkout starts here</span>
+          <h1>Your Cart</h1>
+        </div>
+        <span className='consumer-pill'>
+          {cartItems.reduce((acc, item) => acc + item.qty, 0)} items
+        </span>
+      </div>
+      <Row className='consumer-two-col'>
+      <Col lg={8}>
         {cartItems.length === 0 ? (
-          <Message>
-            Your cart is empty <Link to='/'>Go Back</Link>
-          </Message>
+          <div className='consumer-empty-state'>
+            <i className='fas fa-shopping-cart'></i>
+            <h2>Your cart is empty</h2>
+            <p>Start with the latest products and build your setup.</p>
+            <Link to='/' className='consumer-btn consumer-btn-primary'>
+              Continue shopping
+            </Link>
+          </div>
         ) : (
-          <ListGroup variant='flush'>
+          <ListGroup variant='flush' className='consumer-cart-list'>
             {cartItems.map((item) => (
-              <ListGroup.Item key={item.product}>
-                <Row>
-                  <Col md={2}>
-                    <Image src={item.image} alt={item.name} fluid rounded />
-                  </Col>
-                  <Col md={3}>
+              <ListGroup.Item key={item.product} className='consumer-cart-row'>
+                  <div className='consumer-cart-image'>
+                    <Image src={item.image} alt={item.name} fluid />
+                  </div>
+                  <div className='consumer-cart-copy'>
                     <Link to={`/product/${item.product}`}>{item.name}</Link>
-                  </Col>
-                  <Col md={2}>${item.price}</Col>
-                  <Col md={2}>
+                    <span>Ready to ship</span>
+                  </div>
+                  <div className='consumer-cart-price'>${item.price}</div>
+                  <div>
                     <Form.Control
                       as='select'
                       value={item.qty}
+                      className='consumer-input'
                       onChange={(e) =>
                         dispatch(
                           addToCart(item.product, Number(e.target.value))
@@ -65,49 +85,54 @@ const CartScreen = ({ match, location, history }) => {
                         </option>
                       ))}
                     </Form.Control>
-                  </Col>
-                  <Col md={2}>
+                  </div>
+                  <div>
                     <Button
                       type='button'
-                      variant='light'
+                      className='consumer-icon-button'
                       onClick={() => removeFromCartHandler(item.product)}
+                      aria-label={`Remove ${item.name}`}
                     >
                       <i className='fas fa-trash'></i>
                     </Button>
-                  </Col>
-                </Row>
+                  </div>
               </ListGroup.Item>
             ))}
           </ListGroup>
         )}
       </Col>
-      <Col md={4}>
-        <Card>
-          <ListGroup variant='flush'>
-            <ListGroup.Item>
-              <h2>
-                Subtotal ({cartItems.reduce((acc, item) => acc + item.qty, 0)})
-                items
-              </h2>
-              $
-              {cartItems
-                .reduce((acc, item) => acc + item.qty * item.price, 0)
-                .toFixed(2)}
-            </ListGroup.Item>
-            <ListGroup.Item>
+      <Col lg={4}>
+        <Card className='consumer-summary-card'>
+          <Card.Body>
+              <h2>Order Summary</h2>
+              <div className='consumer-summary-line'>
+                <span>Items ({cartItems.reduce((acc, item) => acc + item.qty, 0)})</span>
+                <strong>
+                  ${cartItems
+                    .reduce((acc, item) => acc + item.qty * item.price, 0)
+                    .toFixed(2)}
+                </strong>
+              </div>
+              <div className='consumer-summary-line'>
+                <span>Shipping</span>
+                <strong>Calculated next</strong>
+              </div>
               <Button
                 type='button'
-                className='btn-block'
+                className='consumer-primary-action'
                 disabled={cartItems.length === 0}
                 onClick={checkoutHandler}
               >
                 Proceed To Checkout
               </Button>
-            </ListGroup.Item>
-          </ListGroup>
+              <p className='consumer-trust-note'>
+                <i className='fas fa-shield-alt'></i> Secure checkout · 30-day returns
+              </p>
+          </Card.Body>
         </Card>
       </Col>
     </Row>
+    </div>
   )
 }
 

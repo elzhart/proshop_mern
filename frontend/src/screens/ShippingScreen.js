@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
-import { Form, Button } from 'react-bootstrap'
+import { Form, Button, Row, Col, Card } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux'
-import FormContainer from '../components/FormContainer'
 import CheckoutSteps from '../components/CheckoutSteps'
 import { saveShippingAddress } from '../actions/cartActions'
 
@@ -23,10 +22,18 @@ const ShippingScreen = ({ history }) => {
   }
 
   return (
-    <FormContainer>
+    <div className='consumer-page consumer-checkout-page'>
       <CheckoutSteps step1 step2 />
-      <h1>Shipping</h1>
-      <Form onSubmit={submitHandler}>
+      <Row className='consumer-two-col'>
+        <Col lg={8}>
+          <div className='consumer-checkout-intro'>
+            <span className='consumer-eyebrow'>Checkout</span>
+            <h1>Shipping address</h1>
+            <p>Use the address where you want your gear delivered.</p>
+          </div>
+          <Card className='consumer-form-card'>
+            <Card.Body>
+              <Form onSubmit={submitHandler}>
         <Form.Group controlId='address'>
           <Form.Label>Address</Form.Label>
           <Form.Control
@@ -34,6 +41,7 @@ const ShippingScreen = ({ history }) => {
             placeholder='Enter address'
             value={address}
             required
+            className='consumer-input'
             onChange={(e) => setAddress(e.target.value)}
           ></Form.Control>
         </Form.Group>
@@ -45,6 +53,7 @@ const ShippingScreen = ({ history }) => {
             placeholder='Enter city'
             value={city}
             required
+            className='consumer-input'
             onChange={(e) => setCity(e.target.value)}
           ></Form.Control>
         </Form.Group>
@@ -56,6 +65,7 @@ const ShippingScreen = ({ history }) => {
             placeholder='Enter postal code'
             value={postalCode}
             required
+            className='consumer-input'
             onChange={(e) => setPostalCode(e.target.value)}
           ></Form.Control>
         </Form.Group>
@@ -67,15 +77,32 @@ const ShippingScreen = ({ history }) => {
             placeholder='Enter country'
             value={country}
             required
+            className='consumer-input'
             onChange={(e) => setCountry(e.target.value)}
           ></Form.Control>
         </Form.Group>
 
-        <Button type='submit' variant='primary'>
-          Continue
+        <Button type='submit' className='consumer-primary-action'>
+          Continue to Payment
         </Button>
       </Form>
-    </FormContainer>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col lg={4}>
+          <div className='consumer-summary-card'>
+            <h2>Order Summary</h2>
+            <div className='consumer-summary-line'>
+              <span>Shipping</span>
+              <strong>Calculated by address</strong>
+            </div>
+            <p className='consumer-trust-note'>
+              <i className='fas fa-shield-alt'></i> Secure checkout · encrypted payment
+            </p>
+          </div>
+        </Col>
+      </Row>
+    </div>
   )
 }
 

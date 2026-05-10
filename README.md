@@ -46,6 +46,10 @@ proshop_mern/
 │       ├── reducers/  # Redux-редьюсеры
 │       ├── screens/   # страницы (Home, Product, Cart, Checkout, Admin...)
 │       └── store.js   # конфигурация Redux store
+├── docs/
+│   ├── project-data/  # проектная документация (ADR, API, features, runbooks, incidents, pages)
+│   ├── adr/           # архитектурные решения этого форка
+│   └── architecture.md
 ├── uploads/           # загруженные изображения товаров (локально)
 ├── docker-compose.yml # MongoDB с авторизацией
 └── .env               # переменные окружения (не в git)
@@ -188,6 +192,21 @@ mongodb://admin:secret@localhost:27017/proshop?authSource=admin
 ```bash
 npm run data:destroy && npm run data:import
 ```
+
+---
+
+## Документация
+
+Полная проектная документация находится в [`docs/project-data/`](./docs/project-data/):
+
+| Папка | Содержимое |
+|-------|-----------|
+| [`adrs/`](./docs/project-data/adrs/) | Архитектурные решения: MongoDB, Redux, JWT, PayPal, Bootstrap |
+| [`api/`](./docs/project-data/api/) | Спецификации API-эндпоинтов |
+| [`features/`](./docs/project-data/features/) | Описание фич: auth, cart, checkout, payments, catalog, admin |
+| [`incidents/`](./docs/project-data/incidents/) | Разборы инцидентов |
+| [`pages/`](./docs/project-data/pages/) | Поведение каждого экрана |
+| [`runbooks/`](./docs/project-data/runbooks/) | Инструкции по эксплуатации |
 
 ---
 

@@ -37,18 +37,24 @@ const RegisterScreen = ({ location, history }) => {
   }
 
   return (
-    <FormContainer>
-      <h1>Sign Up</h1>
-      {message && <Message variant='danger'>{message}</Message>}
-      {error && <Message variant='danger'>{error}</Message>}
-      {loading && <Loader />}
-      <Form onSubmit={submitHandler}>
+    <div className='consumer-auth-page'>
+      <div className='consumer-page-strip'></div>
+      <FormContainer>
+        <div className='consumer-auth-card'>
+          <span className='consumer-auth-badge'>Consumer auth / Register</span>
+          <h1>Create account</h1>
+          <p>Join ProShop for faster checkout, order history, and saved preferences.</p>
+          {message && <Message variant='danger'>{message}</Message>}
+          {error && <Message variant='danger'>{error}</Message>}
+          {loading && <Loader />}
+          <Form onSubmit={submitHandler}>
         <Form.Group controlId='name'>
           <Form.Label>Name</Form.Label>
           <Form.Control
             type='name'
             placeholder='Enter name'
             value={name}
+            className='consumer-input'
             onChange={(e) => setName(e.target.value)}
           ></Form.Control>
         </Form.Group>
@@ -59,6 +65,7 @@ const RegisterScreen = ({ location, history }) => {
             type='email'
             placeholder='Enter email'
             value={email}
+            className='consumer-input'
             onChange={(e) => setEmail(e.target.value)}
           ></Form.Control>
         </Form.Group>
@@ -69,6 +76,7 @@ const RegisterScreen = ({ location, history }) => {
             type='password'
             placeholder='Enter password'
             value={password}
+            className='consumer-input'
             onChange={(e) => setPassword(e.target.value)}
           ></Form.Control>
         </Form.Group>
@@ -79,16 +87,17 @@ const RegisterScreen = ({ location, history }) => {
             type='password'
             placeholder='Confirm password'
             value={confirmPassword}
+            className='consumer-input'
             onChange={(e) => setConfirmPassword(e.target.value)}
           ></Form.Control>
         </Form.Group>
 
-        <Button type='submit' variant='primary'>
+        <Button type='submit' className='consumer-primary-action'>
           Register
         </Button>
       </Form>
 
-      <Row className='py-3'>
+      <Row className='consumer-auth-switch'>
         <Col>
           Have an Account?{' '}
           <Link to={redirect ? `/login?redirect=${redirect}` : '/login'}>
@@ -96,7 +105,9 @@ const RegisterScreen = ({ location, history }) => {
           </Link>
         </Col>
       </Row>
-    </FormContainer>
+        </div>
+      </FormContainer>
+    </div>
   )
 }
 
